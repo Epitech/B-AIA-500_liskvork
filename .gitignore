@@ -1,8 +1,9 @@
-# Binary
-build*
+# This should be all that's needed for zig
+.zig-cache/
+zig-out/
 
-# Cache folder
-.cache
-
-# AI
-ais
+# But of course there's nix
+result
+.direnv
+.envrc
+.pre-commit-config.yaml

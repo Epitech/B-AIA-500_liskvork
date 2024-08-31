@@ -1,38 +1,20 @@
-FROM registry.fedoraproject.org/fedora-minimal:38
-LABEL maintainer="Alexandre Flion <huntears@kreog.com>"
+FROM alpine:edge as builder
 
-RUN microdnf -y upgrade
+ARG BUILD_VERSION=0.0.0
 
-RUN microdnf -y --refresh install   \
-        --setopt=tsflags=nodocs     \
-        --setopt=deltarpm=false     \
-        clang                       \
-        make                        \
-        cmake                       \
-        git                         \
-        gtest-devel                 \
-        rpm-build                   \
-        dpkg
+RUN apk add --no-cache "zig=~0.13"
 
-RUN microdnf clean all
-
-RUN rm -rf /tmp/liskvork_build && mkdir -pv /tmp/liskvork_build
-
-WORKDIR /tmp/build
+WORKDIR /work
 
 COPY . .
 
-RUN mkdir -pv build \
-    && cd build \
-    && cmake -DCMAKE_BUILD_TYPE=Release .. \
-    && make -j4
+RUN zig build -Doptimize=ReleaseSafe -Dversion=${BUILD_VERSION} --summary all
 
-RUN mkdir -pv /usr/app && cp build/bin/liskvork /usr/app/liskvork
+FROM scratch
+LABEL maintainer="emneo <emneo@kreog.com>"
 
-RUN cd /tmp \
-    && rm -rf /tmp/* \
-    && chmod 1777 /tmp
+WORKDIR /
 
-WORKDIR /usr/app
+COPY --from=builder /work/zig-out/bin/liskvork .
 
-ENTRYPOINT ["/usr/app/liskvork"]
+ENTRYPOINT ["/liskvork"]
